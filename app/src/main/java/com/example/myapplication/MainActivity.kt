@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.graphics.Color
@@ -33,19 +34,20 @@ class MainActivity : ComponentActivity() {
         setContent {
             MyApplicationTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    FocusableGrid()
+                    FocusableGrid(50)
                 }
             }
         }
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun FocusableGrid() {
+fun FocusableGrid(rowCount: Int) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        items(50) { outer ->
+        items(rowCount) { outer ->
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier
@@ -53,6 +55,7 @@ fun FocusableGrid() {
             ) {
                 items(50) { index ->
                     FocusableBox(
+                        rowIndex = outer,
                         index = index,
                         modifier = Modifier
                             .testTag("$outer-$index")
@@ -66,6 +69,7 @@ fun FocusableGrid() {
 
 @Composable
 fun FocusableBox(
+    rowIndex: Int,
     index: Int,
     modifier: Modifier = Modifier
 ) {
@@ -79,6 +83,6 @@ fun FocusableBox(
             .focusable(interactionSource = interactionSource)
             .background(if (isFocused) Color.Green else Color.Red)
     ) {
-        Text("$index")
+        Text("$rowIndex - $index")
     }
 }
