@@ -26,9 +26,13 @@ class FocusTest {
 
     @OptIn(ExperimentalTestApi::class)
     @Test
-    fun disposedLazyRowWithFocusRestorerRestoresFocusCorrectly() {
+    fun disposedLazyRowWithFocusRestorerRestoresFocusCorrectlyLowRowCount() {
+
+        val rowCount = 7
+        val verticalMoves = rowCount - 1
+
         composeRule.setContent {
-            FocusableGrid()
+            FocusableGrid(rowCount)
         }
 
         val root = composeRule.onAllNodes(isRoot())[0]
@@ -37,36 +41,74 @@ class FocusTest {
         composeRule.onNodeWithTag("0-0").assertIsFocused()
 
         root.performKeyInput {
-            // Move to item 0-10, when we come back to this row later this item should again be focused
-            repeat(10) { count ->
-                pressKey(Key.DirectionRight)
-                composeRule.onNodeWithTag("0-${count + 1}").assertIsFocused()
-            }
-
-            // Go down to the next row
-            pressKey(Key.DirectionDown)
-            repeat(10) {
-                // Make sure we're at the start of the row now
-                pressKey(Key.DirectionLeft)
-            }
-            composeRule.onNodeWithTag("1-0").assertIsFocused()
-
-            // Go down 5 rows
-            repeat(5) { count ->
+            // Move to item 10-0
+            repeat(verticalMoves) { count ->
                 pressKey(Key.DirectionDown)
-                composeRule.onNodeWithTag("${count + 2}-0").assertIsFocused()
+                composeRule.onNodeWithTag("${count + 1}-0").assertIsFocused()
             }
 
-            // Go back up to the second row
-            repeat(5) { count ->
+            // Go Back to the first row, selecting item x-1 in each row as we go up,
+            // when we come back to this down later item x-1 should again be focused in every row
+            repeat(verticalMoves) { count ->
+                pressKey(Key.DirectionRight)
+                // when we move up item right item x-1 should be focused
+                composeRule.onNodeWithTag("${verticalMoves - count}-1").assertIsFocused()
                 pressKey(Key.DirectionUp)
-                composeRule.onNodeWithTag("${5 - count}-0").assertIsFocused()
+                // when we move up item right item x-0 should be focused
+                composeRule.onNodeWithTag("${verticalMoves - count - 1}-0").assertIsFocused()
             }
 
-            // Go back to the first row, focus should go back to the previously focused item within that row (ie. 0-10)
-            // On BOM 2025.11.01 this passes (compose 1.9.x), on later versions it fails (compose 1.10)
-            pressKey(Key.DirectionUp)
-            composeRule.onNodeWithTag("0-10").assertIsFocused()
+            // Go back down to the row 10, each time we go down item x-1 should be focused
+            // On BOM 2025.11.01 this passes  on later versions it fails (BOM 2025.12.00-2026.04.01)
+            repeat(verticalMoves) { count ->
+                pressKey(Key.DirectionDown)
+                composeRule.onNodeWithTag("${count + 1}-1").assertIsFocused()
+            }
+
+        }
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun disposedLazyRowWithFocusRestorerRestoresFocusCorrectlyHighRowCount() {
+
+        val rowCount = 50
+        val verticalMoves = 10
+
+        composeRule.setContent {
+            FocusableGrid(rowCount)
+        }
+
+        val root = composeRule.onAllNodes(isRoot())[0]
+
+        composeRule.onNodeWithTag("0-0").requestFocus()
+        composeRule.onNodeWithTag("0-0").assertIsFocused()
+
+        root.performKeyInput {
+            // Move to item 10-0
+            repeat(verticalMoves) { count ->
+                pressKey(Key.DirectionDown)
+                composeRule.onNodeWithTag("${count + 1}-0").assertIsFocused()
+            }
+
+            // Go Back to the first row, selecting item x-1 in each row as we go up,
+            // when we come back to this down later item x-1 should again be focused in every row
+            repeat(verticalMoves) { count ->
+                pressKey(Key.DirectionRight)
+                // when we move up item right item x-1 should be focused
+                composeRule.onNodeWithTag("${verticalMoves - count}-1").assertIsFocused()
+                pressKey(Key.DirectionUp)
+                // when we move up item right item x-0 should be focused
+                composeRule.onNodeWithTag("${verticalMoves - count - 1}-0").assertIsFocused()
+            }
+            // Go back down to the row 10, each time we go down item x-1 should be focused
+            // On BOM 2025.07.00 and androidx.activity:activity-compose 1.11.0 this passes
+            // on later versions it fails (BOM 2025.08.00-2026.04.01 and activity-compose 1.12.2-1.13.0)
+            repeat(verticalMoves) { count ->
+                pressKey(Key.DirectionDown)
+                composeRule.onNodeWithTag("${count + 1}-1").assertIsFocused()
+            }
+
         }
     }
 }
