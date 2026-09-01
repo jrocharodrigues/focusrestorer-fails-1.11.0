@@ -32,7 +32,7 @@ class FocusTest {
         val verticalMoves = rowCount - 1
 
         composeRule.setContent {
-            FocusableGrid(rowCount)
+            FocusableGrid()
         }
 
         val root = composeRule.onAllNodes(isRoot())[0]
@@ -72,11 +72,10 @@ class FocusTest {
     @Test
     fun disposedLazyRowWithFocusRestorerRestoresFocusCorrectlyHighRowCount() {
 
-        val rowCount = 50
-        val verticalMoves = 10
+        val verticalMoves = 15
 
         composeRule.setContent {
-            FocusableGrid(rowCount)
+            FocusableGrid()
         }
 
         val root = composeRule.onAllNodes(isRoot())[0]
