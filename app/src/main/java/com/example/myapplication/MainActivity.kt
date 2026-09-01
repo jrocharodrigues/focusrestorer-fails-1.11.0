@@ -11,6 +11,7 @@ import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -25,6 +26,9 @@ import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import com.example.myapplication.ui.theme.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {
@@ -34,7 +38,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MyApplicationTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    FocusableGrid(50)
+                    FocusableGrid(Modifier.padding(innerPadding))
                 }
             }
         }
@@ -43,28 +47,40 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun FocusableGrid(rowCount: Int) {
+fun FocusableGrid(
+    modifier: Modifier = Modifier,
+    viewModel: GridViewModel = viewModel()
+) {
+    val lazyPagingItems = viewModel.pagingData.collectAsLazyPagingItems()
+
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = modifier
     ) {
-        items(rowCount) { outer ->
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier
-                    .focusRestorer()
-            ) {
-                items(50) { index ->
-                    FocusableBox(
-                        rowIndex = outer,
-                        index = index,
-                        modifier = Modifier
-                            .testTag("$outer-$index")
-                    )
+        items(
+            count = lazyPagingItems.itemCount,
+            key = lazyPagingItems.itemKey { item -> item },
+        ) { index ->
+            val rowIndex = lazyPagingItems[index]
+
+            // rowIndex can be null if placeholders are enabled.
+            // We disabled them, but a null check is standard practice.
+            if (rowIndex != null) {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.focusRestorer()
+                ) {
+                    items(50) { colIndex ->
+                        FocusableBox(
+                            rowIndex = rowIndex,
+                            index = colIndex,
+                            modifier = Modifier.testTag("$rowIndex-$colIndex")
+                        )
+                    }
                 }
             }
         }
     }
-
 }
 
 @Composable
@@ -79,7 +95,7 @@ fun FocusableBox(
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .size(100.dp)
+            .size(200.dp)
             .focusable(interactionSource = interactionSource)
             .background(if (isFocused) Color.Green else Color.Red)
     ) {
